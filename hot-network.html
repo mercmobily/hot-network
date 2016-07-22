@@ -1,0 +1,34 @@
+<link rel="import" href="../polymer/polymer.html">
+
+<!--
+`hot-network`
+
+
+@demo demo/index.html 
+-->
+
+<dom-module id="hot-network">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+    </style>
+    <h2>Hello [[prop1]]</h2>
+  </template>
+
+  <script>
+    Polymer({
+
+      is: 'hot-network',
+
+      properties: {
+        prop1: {
+          type: String,
+          value: 'hot-network',
+        },
+      },
+
+    });
+  </script>
+</dom-module>
