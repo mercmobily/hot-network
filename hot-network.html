@@ -4,8 +4,17 @@
 `hot-network`
 
 
-@demo demo/index.html 
+
+@demo demo/index.html
 -->
+
+<!--
+TODO:
+* Make hotNetwork loadign CSS a little prettier
+* Add option to tap on form to reload
+* Check that snippet selector will work fine with hot-network
+-->
+
 
 <dom-module id="hot-network">
   <template>
@@ -13,8 +22,30 @@
       :host {
         display: block;
       }
+
+      .idle {
+        @apply(--hot-network-overlay-idle);
+      }
+
+      .loading {
+        @apply(--hot-network-overlay-loading);
+      }
+
+      .loaded {
+        @apply(--hot-network-overlay-loaded);
+      }
+
+      .error {
+        @apply(--hot-network-overlay-error);
+      }
+
+
     </style>
-    <h2>Hello [[prop1]]</h2>
+
+    <div id="overlay" class$="{{status}}">
+      <content></content>
+    </div>
+
   </template>
 
   <script>
@@ -23,11 +54,107 @@
       is: 'hot-network',
 
       properties: {
-        prop1: {
+
+        _listenTo: Object,
+
+        status: {
           type: String,
-          value: 'hot-network',
+          notify: true,
+          value: "idle",
+          observer: "_statusChanged",
         },
+
+        emitterId: String,
+
+        emitterProperty: String,
       },
+
+      _statusChanged: function( ){
+        debugger;
+        console.log( this.status );
+        this.updateStyles();
+      },
+
+      _findFirstChildElement: function(){
+         var firstElement = this.getEffectiveChildren()[0];
+         if( firstElement ){
+           return this.emitterProperty ? firstElement[ this.emitterProperty ] : firstElement;
+         }
+      },
+
+      _findEmitterNode: function( node ){
+
+        var listenTo;
+        var emitterId = this.emitterId;
+        var emitterProperty = this.emitterProperty;
+        var quitVisit = false;
+        function visitChildrenOf( node ){
+          var effectiveChildNodes = Polymer.dom( node ).getEffectiveChildNodes();
+          for( var i = 0, l = effectiveChildNodes.length; i < l; i ++ ){
+            var node = effectiveChildNodes[ i ];
+
+            // Quit if quitVisit is true.
+            if( quitVisit ) break;
+
+            // Only deals with ELEMENTS
+            if( node.nodeType !== Node.ELEMENT_NODE ) continue;
+
+            // Look for request objects within element (in .request)
+            if( node.id === emitterId ){
+              listenTo = emitterProperty ? node[ emitterProperty ] : node;
+              quitVisit = true;
+              break;
+            }
+            visitChildrenOf( node );
+          };
+        }
+        visitChildrenOf( this );
+
+        return listenTo;
+      },
+
+      attached: function(){
+
+        // TODO: Check that this.async() is "the way" to make sure that
+        // light DOM children are initialised
+        //this.async( function(){
+
+          if( this.emitterId ){
+            this.listenTo = this._findEmitterNode();
+          } else {
+            this.listenTo = this._findFirstChildElement();
+          }
+
+          if( this.listenTo ){
+            this.listen( this.listenTo, "error", "_catcher" );
+            this.listen( this.listenTo, "response", "_catcher" );
+            this.listen( this.listenTo, "request", "_catcher" );
+          }
+          console.log("LISTENING TO:", this.listenTo );
+        //});
+      },
+
+      detached: function(){
+        if( this.listenTo ){
+          this.unlisten( this.listenTo, "error", "_catcher" );
+          this.unlisten( this.listenTo, "response", "_catcher" );
+          this.unlisten( this.listenTo, "request", "_catcher" );
+        }
+      },
+
+      _catcher: function( e ){
+        console.log("Status before: ", this.status );
+
+        this.status = ( {
+          error: 'error',
+          request: 'loading',
+          response: 'loaded',
+        }[ e.type ] ) || "error";
+
+        console.log("Status after: ", this.status );
+      }
+
+
 
     });
   </script>
