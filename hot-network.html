@@ -8,7 +8,7 @@
 
 <!--
 TODO:
-* 1. Add option to tap on form to reload, redo overlay so that it makes anything unclickable
+* 1. Add option to tap on form to reload
 * 2. Check that snippet selector will work fine with hot-network, document hot-network
 * 5. Make hotNetwork loadign CSS a little prettier
 -->
@@ -95,6 +95,16 @@ TODO:
 
       properties: {
 
+        noReloadOnTap: {
+          type: Boolean,
+          value: false
+        },
+
+        userMessageError: {
+          type: String,
+          value: "Could not load data"
+        },
+
         emitter: Object,
 
         status: {
@@ -110,11 +120,12 @@ TODO:
 
       _overlayTapped: function( e ){
         debugger;
-        e.stopPropagation();
-        e.preventDefault();
-        if( this.status == 'error' ){
-          debugger;
-          this.emitter.generateRequest();
+        if( ! this.noReloadOnTap ){
+          e.stopPropagation();
+          e.preventDefault();
+          if( this.status == 'error' ){
+            this.emitter.generateRequest();
+          }
         }
       },
 
@@ -124,6 +135,7 @@ TODO:
 
       _findFirstChildElement: function(){
          var firstElement = this.getEffectiveChildren()[0];
+         var emitterProperty = this.emitterProperty || 'request';
          if( firstElement ){
            if( this.emitterProperty ){
              return firstElement[ this.emitterProperty ]
@@ -136,7 +148,7 @@ TODO:
       _findEmitterNode: function( node ){
         var emitter;
         var emitterId = this.emitterId;
-        var emitterProperty = this.emitterProperty;
+        var emitterProperty = this.emitterProperty || 'request';
         var quitVisit = false;
         function visitChildrenOf( node ){
           var effectiveChildNodes = Polymer.dom( node ).getEffectiveChildNodes();
@@ -149,9 +161,10 @@ TODO:
             // Only deals with ELEMENTS
             if( node.nodeType !== Node.ELEMENT_NODE ) continue;
 
-            // Look for request objects within element (in .request)
+            // Look for request objects within element, always giving
+            // priority to .request (which is the default in iron-form)
             if( node.id === emitterId ){
-              emitter = emitterProperty ? node[ emitterProperty ] : node;
+              emitter = node[ emitterProperty ] ? node[ emitterProperty ] : node;
               quitVisit = true;
               break;
             }
@@ -190,7 +203,6 @@ TODO:
       },
 
       _catcher: function( e ){
-        console.log("Status before: ", this.status );
 
         this.status = ( {
           error: 'error',
@@ -198,11 +210,11 @@ TODO:
           response: 'loaded',
         }[ e.type ] ) || "error";
 
-        console.log("Status after: ", this.status );
+        // if there is an error, fire a global error message
+        if( this.status === "error" ){
+          this.fire( 'user-message-error', { message: this.userMessageError } );
+        }
       }
-
-
-
     });
   </script>
 </dom-module>
