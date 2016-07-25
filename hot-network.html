@@ -8,9 +8,8 @@
 
 <!--
 TODO:
-* 1. Add option to tap on form to reload
-* 2. Check that snippet selector will work fine with hot-network, document hot-network
-* 5. Make hotNetwork loadign CSS a little prettier
+* Make hotNetwork loadign CSS a little prettier
+
 -->
 
 <dom-module id="hot-network">
@@ -95,6 +94,11 @@ TODO:
 
       properties: {
 
+        neverError: {
+          type: Boolean,
+          value: false
+        },
+
         noReloadOnTap: {
           type: Boolean,
           value: false
@@ -119,7 +123,6 @@ TODO:
       },
 
       _overlayTapped: function( e ){
-        debugger;
         if( ! this.noReloadOnTap ){
           e.stopPropagation();
           e.preventDefault();
@@ -146,6 +149,7 @@ TODO:
       },
 
       _findEmitterNode: function( node ){
+        debugger;
         var emitter;
         var emitterId = this.emitterId;
         var emitterProperty = this.emitterProperty || 'request';
@@ -204,15 +208,26 @@ TODO:
 
       _catcher: function( e ){
 
-        this.status = ( {
-          error: 'error',
-          request: 'loading',
-          response: 'loaded',
-        }[ e.type ] ) || "error";
 
-        // if there is an error, fire a global error message
-        if( this.status === "error" ){
-          this.fire( 'user-message-error', { message: this.userMessageError } );
+        if( this.neverError ){
+
+          this.status = ( {
+            error: 'loaded',
+            request: 'loading',
+            response: 'loaded',
+          }[ e.type ] ) || "loaded";
+
+        } else {
+          this.status = ( {
+            error: 'error',
+            request: 'loading',
+            response: 'loaded',
+          }[ e.type ] ) || "error";
+
+          // if there is an error, fire a global error message
+          if( this.status === "error" && this.userMessageError ){
+            this.fire( 'user-message-error', { message: this.userMessageError } );
+          }
         }
       }
     });
