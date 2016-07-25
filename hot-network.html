@@ -3,47 +3,87 @@
 <!--
 `hot-network`
 
-
-
 @demo demo/index.html
 -->
 
 <!--
 TODO:
-* Make hotNetwork loadign CSS a little prettier
-* Add option to tap on form to reload
-* Check that snippet selector will work fine with hot-network
+* 1. Add option to tap on form to reload, redo overlay so that it makes anything unclickable
+* 2. Check that snippet selector will work fine with hot-network, document hot-network
+* 5. Make hotNetwork loadign CSS a little prettier
 -->
-
 
 <dom-module id="hot-network">
   <template>
     <style>
       :host {
         display: block;
-      }
+        position: relative;
+      };
 
-      .idle {
-        @apply(--hot-network-overlay-idle);
-      }
+     /** Standard overlay CSS.
+       * The only "strange" part is the z-index, which needs to be high
+       * so that the overlay catches everything
+     */
+      #overlay {
+        display: block;
+        position: absolute;
+        top:0;
+        left:0;
+        right:0;
+        bottom:0;
+        padding: 10px;
+        color:white;
+        z-index:9999;
+        @apply(--hot-network-overlay);
+      };
 
-      .loading {
+
+      #overlay.loading {
+        opacity: 0.1;
+        background-color: grey;
         @apply(--hot-network-overlay-loading);
       }
 
-      .loaded {
+      #overlay.loaded {
+        background-color: none;
+        z-index:0;
         @apply(--hot-network-overlay-loaded);
       }
 
-      .error {
+      #overlay.error {
+        opacity: 0.1;
+        background-color: red;
         @apply(--hot-network-overlay-error);
       }
 
 
+      #content-wrapper {
+        padding: 10px;
+        @apply(--hot-network-content-wrapper);
+      };
+
+      #content-wrapper.loading {
+        opacity: 0.3;
+        @apply(--hot-network-content-wrapper-loading);
+      }
+
+      #content-wrapper.loaded {
+        @apply(--hot-network-content-wrapper-loaded);
+      }
+
+      #content-wrapper.error {
+        opacity: 0.3;
+        @apply(--hot-network-content-wrapper-error);
+      }
+
     </style>
 
-    <div id="overlay" class$="{{status}}">
-      <content></content>
+    <div>
+      <div id="overlay" on-tap="_overlayTapped" class$="{{status}}"></div>
+      <div id="content-wrapper" class$="{{status}}">
+        <content></content>
+      </div>
     </div>
 
   </template>
@@ -55,36 +95,46 @@ TODO:
 
       properties: {
 
-        _listenTo: Object,
+        emitter: Object,
 
         status: {
           type: String,
           notify: true,
-          value: "idle",
+          value: "loaded",
           observer: "_statusChanged",
         },
 
         emitterId: String,
-
         emitterProperty: String,
       },
 
-      _statusChanged: function( ){
+      _overlayTapped: function( e ){
         debugger;
-        console.log( this.status );
+        e.stopPropagation();
+        e.preventDefault();
+        if( this.status == 'error' ){
+          debugger;
+          this.emitter.generateRequest();
+        }
+      },
+
+      _statusChanged: function( s ){
         this.updateStyles();
       },
 
       _findFirstChildElement: function(){
          var firstElement = this.getEffectiveChildren()[0];
          if( firstElement ){
-           return this.emitterProperty ? firstElement[ this.emitterProperty ] : firstElement;
+           if( this.emitterProperty ){
+             return firstElement[ this.emitterProperty ]
+           } else {
+             return firstElement.request ? firstElement.request : firstElement;
+          }
          }
       },
 
       _findEmitterNode: function( node ){
-
-        var listenTo;
+        var emitter;
         var emitterId = this.emitterId;
         var emitterProperty = this.emitterProperty;
         var quitVisit = false;
@@ -94,14 +144,14 @@ TODO:
             var node = effectiveChildNodes[ i ];
 
             // Quit if quitVisit is true.
-            if( quitVisit ) break;
+            if( quitVisit ) return;
 
             // Only deals with ELEMENTS
             if( node.nodeType !== Node.ELEMENT_NODE ) continue;
 
             // Look for request objects within element (in .request)
             if( node.id === emitterId ){
-              listenTo = emitterProperty ? node[ emitterProperty ] : node;
+              emitter = emitterProperty ? node[ emitterProperty ] : node;
               quitVisit = true;
               break;
             }
@@ -110,35 +160,32 @@ TODO:
         }
         visitChildrenOf( this );
 
-        return listenTo;
+        return emitter;
       },
 
       attached: function(){
 
-        // TODO: Check that this.async() is "the way" to make sure that
-        // light DOM children are initialised
-        //this.async( function(){
+        this.async( function() {
 
           if( this.emitterId ){
-            this.listenTo = this._findEmitterNode();
+            this.emitter = this._findEmitterNode();
           } else {
-            this.listenTo = this._findFirstChildElement();
+            this.emitter = this._findFirstChildElement();
           }
 
-          if( this.listenTo ){
-            this.listen( this.listenTo, "error", "_catcher" );
-            this.listen( this.listenTo, "response", "_catcher" );
-            this.listen( this.listenTo, "request", "_catcher" );
+          if( this.emitter ){
+            this.listen( this.emitter, "error", "_catcher" );
+            this.listen( this.emitter, "response", "_catcher" );
+            this.listen( this.emitter, "request", "_catcher" );
           }
-          console.log("LISTENING TO:", this.listenTo );
-        //});
+        });
       },
 
       detached: function(){
-        if( this.listenTo ){
-          this.unlisten( this.listenTo, "error", "_catcher" );
-          this.unlisten( this.listenTo, "response", "_catcher" );
-          this.unlisten( this.listenTo, "request", "_catcher" );
+        if( this.emitter ){
+          this.unlisten( this.emitter, "error", "_catcher" );
+          this.unlisten( this.emitter, "response", "_catcher" );
+          this.unlisten( this.emitter, "request", "_catcher" );
         }
       },
 
