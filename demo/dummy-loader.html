@@ -1,0 +1,68 @@
+<link rel="import" href="../../polymer/polymer.html">
+<link rel="import" href="../../paper-button/paper-button.html">
+
+<dom-module id="dummy-loader">
+  <template>
+
+    <style>
+      :host {
+        display: block;
+      };
+    </style>
+
+    <div>
+      <paper-button raised on-tap="_sr">Simulate request, response</paper-button>
+      <paper-button raised on-tap="_se">Simulate request, error</paper-button>
+      <div id="request"></div>
+    </div>
+  </template>
+
+    <script>
+      Polymer({
+        is: "dummy-loader",
+
+        ready: function(){
+          this.request = this.$.request;
+          this.alternativeRequest = this.$.request;
+
+          // Making the humble div look more like a proper iron-ajax element
+          // This will get called when hot-network's error overlay is tapped
+          var t = this;
+          this.request.generateRequest = function(){
+            t._dispatch( t.request, 'request' );
+            setTimeout( function(){
+              t._dispatch( t.request, 'response' );
+            }, 1000)
+          }
+        },
+
+        properties: {
+          request: Object,
+          alternativeRequest: Object,
+        },
+
+        _dispatch: function( node, eventName ){
+          var e = new Event( eventName );
+          node.dispatchEvent( e );
+        },
+
+        _sr: function( e ){
+          var t = this;
+          t._dispatch( t.request, 'request' );
+          setTimeout( function(){
+            t._dispatch( t.request, 'response' );
+          }, 1000)
+        },
+
+        _se: function( e ){
+          var t = this;
+          t._dispatch( t.request, 'request' );
+          setTimeout( function(){
+            t._dispatch( t.request, 'error' );
+          }, 1000)
+        },
+
+
+      })
+  </script>
+</dom-module>
