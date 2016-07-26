@@ -28,7 +28,7 @@ All you have to do in order to get a contained element unclickable while the AJA
 
 # Usage with `<hot-form>`
 
-The `<hot-form>` element is a mixed bag: it has itself a `request` property which is the one used to _initally load_ data from the server. This element is a "loader", and therefore should check for errors too (and reload the data if the loading call fails). However, `<hot-form>` _also_ always contains a `<form>` element that itself has a `request` property, used to submit data to the server.
+The `<hot-form>` element is a mixed bag: it has itself a `request` property which is the one used to _initally load_ data from the server. So, it should check for errors at load time (and reload the data if the loading call fails). However, `<hot-form>` _also_ always contains a `<form>` element that itself has a `request` property, used to submit data to the server.
 
 In this case, you a recommended to use two `<hot-network>` elements:
 
