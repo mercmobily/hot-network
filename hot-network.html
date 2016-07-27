@@ -26,6 +26,28 @@ All you have to do in order to get a contained element unclickable while the AJA
 
 `<hot-network>` will only ever have two states: "loading" (widget is overlayed) or "loaded" (no AJAX call is happening).
 
+# Error management
+
+You can use `<hot-network>` for widgets that are build to display data after making an AJAX call. In this case, you will want to turn on `<hot-network>`'s error management:
+
+    <hot-network manage-errors>
+      <data-displayer></data-displayer>
+    </hot-network>
+
+In this case, `<hot-network>` will be in one of three states: "loading", "loaded", "error".
+
+When in "error" state, `<data-displayer>` will still be overlayed and unreachable. However, when tapping on the overlay, the AJAX call will be attempted again (it will re-run the `generateRequest()` method of the `<iron-ajax>` element).
+
+If `manage-error` is on, in case of error `<hot-network>` will fire a `user-message-error` event with the message in the detail, like this: `{ message: "Error!" }`. The error message can be customised by setting the `user-message-error` attribute:
+
+    <hot-network manage-errors user-message-error="Cannot load users!">
+      <data-displayer></data-displayer>
+    </hot-network>
+
+A UI widget should pick up this message event and display it to the user.
+
+Note that `manage-errors` doesn't make sense in a form contest because 1) A form that has an error will likely emit its own user message event 2) A form that fails doesn't need to be overlayed to retry: the user will be able to click on the "Submit" button again.
+
 # Usage with `<hot-form>`
 
 The `<hot-form>` element is a mixed bag: it has itself a `request` property which is the one used to _initally load_ data from the server. So, it should check for errors at load time (and reload the data if the loading call fails). However, `<hot-form>` _also_ always contains a `<form>` element that itself has a `request` property, used to submit data to the server.
@@ -59,28 +81,6 @@ Voila': you have a form that pre-loads and submits data, and that is 100% networ
 
 Note that with just a small bunch of decorating widgets, you have here a fully functional, network-aware form.
 
-# Error management
-
-You can use `<hot-network>` for widgets that are build to display data after making an AJAX call. In this case, you will want to turn on `<hot-network>`'s error management:
-
-    <hot-network manage-errors>
-      <data-displayer></data-displayer>
-    </hot-network>
-
-In this case, `<hot-network>` will be in one of three states: "loading", "loaded", "error".
-
-When in "error" state, `<data-displayer>` will still be overlayed and unreachable. However, when tapping on the overlay, the AJAX call will be attempted again (it will re-run the `generateRequest()` method of the `<iron-ajax>` element).
-
-If `manage-error` is on, in case of error `<hot-network>` will fire a `user-message-error` event with the message in the detail, like this: `{ message: "Error!" }`. The error message can be customised by setting the `user-message-error` attribute:
-
-    <hot-network manage-errors user-message-error="Cannot load users!">
-      <data-displayer></data-displayer>
-    </hot-network>
-
-A UI widget should pick up this message event and display it to the user.
-
-Note thjat `manage-errors` doesn't make sense in a form contest because 1) A form that has an error will likely emit its own user message event 2) A form that fails doesn't need to be overlayed to retry: the user will be able to click on the "Submit" button again.
-
 # Targeting the right `<iron-ajax>`
 
 `<hot-network>` should always directly wrap the element that makes the requests, which must be `<hot-network>`'s first child (also called the _target element_).
@@ -111,7 +111,7 @@ Although there haven't been any use cases where this has been necessary, it's al
 
     <hot-network target-id="displayer">
       <div>
-        <data-displayer></data-displayer>
+        <data-displayer id="displayer"></data-displayer>
       </div>
     </hot-network>
 
