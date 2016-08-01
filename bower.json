@@ -1,9 +1,10 @@
 {
   "name": "hot-network",
-  "description": "Decorator widegt that makes AJAX-using elements network resilient and responsive, (optionally) giving the option to re-run the failed AJAX operation",
+  "description": "Decorator widegt that makes AJAX-using elements network resilient and responsive",
   "main": "hot-network.html",
   "dependencies": {
-    "polymer": "Polymer/polymer#^1.6.0"
+    "polymer": "Polymer/polymer#^1.6.0",
+    "hot-deep-target-behavior": "^0.1.1"
   },
   "devDependencies": {
     "iron-component-page": "PolymerElements/iron-component-page#^1.0.0",
