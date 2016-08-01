@@ -1,4 +1,5 @@
 <link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../hot-deep-target-behavior/hot-deep-target-behavior.html">
 
 <!--
 Too many applications today have AJAX calls that are made without proper error checking. This leads to applications with strangely empty select widgets, and requiring a hard reloads in orderto (hopefully) display properly. Network resiliance code is boilerplate, and it's often repeated for each call.
@@ -264,36 +265,13 @@ Although there haven't been any use cases where this has been necessary, it's al
          }
       },
 
+
       _findEmitterNode: function( node ){
-        var emitter;
-        var emitterId = this.targetId;
-        var emitterProperty = this.targetProperty || 'request';
-        var quitVisit = false;
-        function visitChildrenOf( node ){
-          var effectiveChildNodes = Polymer.dom( node ).getEffectiveChildNodes();
-          for( var i = 0, l = effectiveChildNodes.length; i < l; i ++ ){
-            var node = effectiveChildNodes[ i ];
-
-            // Quit if quitVisit is true.
-            if( quitVisit ) return;
-
-            // Only deals with ELEMENTS
-            if( node.nodeType !== Node.ELEMENT_NODE ) continue;
-
-            // Look for request objects within element, always giving
-            // priority to .request (which is the default in iron-form)
-            if( node.id === emitterId ){
-              emitter = node[ emitterProperty ] ? node[ emitterProperty ] : node;
-              quitVisit = true;
-              break;
-            }
-            visitChildrenOf( node );
-          };
-        }
-        visitChildrenOf( this );
-
-        return emitter;
+        var emitter = this.queryEffectiveChildrenDeep( "#" + this.targetId, true, 'hot-network' );
+        var emitterProperty = ( this.targetProperty || 'request' );
+        return emitter[ emitterProperty ] ? emitter[ emitterProperty ]: emitter;
       },
+
 
       attached: function(){
 
