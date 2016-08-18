@@ -108,7 +108,7 @@ So:
 
 So, the `request` property always has priority.
 
-Although there haven't been any use cases where this has been necessary, it's also possible to specify the target ID directly and have the target further in the DOM, rather than being `<hot-network>`'s first child:
+It's possible to specify the target ID directly and have the target further in the DOM, rather than being `<hot-network>`'s first child:
 
     <hot-network target-id="displayer">
       <div>
@@ -125,34 +125,33 @@ Although there haven't been any use cases where this has been necessary, it's al
       :host {
         display: block;
         position: relative;
-      };
+      }
 
-     /** Standard overlay CSS.
+      ;
+      /** Standard overlay CSS.
        * The only "strange" part is the z-index, which needs to be high
        * so that the overlay catches everything
      */
+
       #overlay {
         display: block;
         position: absolute;
-        top:0;
-        left:0;
-        right:0;
-        bottom:0;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
         padding: 10px;
-        z-index:9999;
-
+        z-index: 9999;
         -webkit-transition: background 0.5s linear;
         -moz-transition: background 0.5s linear;
         -ms-transition: background 0.5s linear;
         -o-transition: background 0.5s linear;
         transition: background 0.5s linear;
-
         border-radius: 25px;
-
         @apply(--hot-network-overlay);
-      };
+      }
 
-
+      ;
       #overlay.loading {
         opacity: 0.2;
         background-color: grey;
@@ -162,8 +161,7 @@ Although there haven't been any use cases where this has been necessary, it's al
       #overlay.loaded {
         background-color: none;
         opacity: 0.2;
-        z-index:0;
-
+        z-index: 0;
         @apply(--hot-network-overlay-loaded);
       }
 
@@ -173,12 +171,12 @@ Although there haven't been any use cases where this has been necessary, it's al
         @apply(--hot-network-overlay-error);
       }
 
-
       #content-wrapper {
         padding: 10px;
         @apply(--hot-network-content-wrapper);
-      };
+      }
 
+      ;
       #content-wrapper.loading {
         opacity: 0.3;
         @apply(--hot-network-content-wrapper-loading);
@@ -192,7 +190,6 @@ Although there haven't been any use cases where this has been necessary, it's al
         opacity: 0.3;
         @apply(--hot-network-content-wrapper-error);
       }
-
     </style>
 
     <div>
@@ -239,89 +236,89 @@ Although there haven't been any use cases where this has been necessary, it's al
         targetProperty: String,
       },
 
-      _overlayTapped: function( e ){
-        if( ! this.noReloadOnTap ){
+      _overlayTapped: function(e) {
+        if (!this.noReloadOnTap) {
           e.stopPropagation();
           e.preventDefault();
-          if( this.status == 'error' ){
+          if (this.status == 'error') {
             this.emitter.generateRequest();
           }
         }
       },
 
-      _statusChanged: function( s ){
+      _statusChanged: function(s) {
         this.updateStyles();
       },
 
-      _findFirstChildElement: function(){
-         var firstElement = this.getEffectiveChildren()[0];
-         var emitterProperty = this.targetProperty || 'request';
-         if( firstElement ){
-           if( emitterProperty ){
-             return firstElement[ emitterProperty ]
-           } else {
-             return firstElement.request ? firstElement.request : firstElement;
+      _findFirstChildElement: function() {
+        var firstElement = this.getEffectiveChildren()[0];
+        var emitterProperty = this.targetProperty || 'request';
+        if (firstElement) {
+          if (emitterProperty) {
+            return firstElement[emitterProperty]
+          } else {
+            return firstElement.request ? firstElement.request : firstElement;
           }
-         }
+        }
       },
 
-
-      _findEmitterNode: function( node ){
-        var emitter = this.queryEffectiveChildrenDeep( "#" + this.targetId, true, 'hot-network' );
-        var emitterProperty = ( this.targetProperty || 'request' );
-        return emitter[ emitterProperty ] ? emitter[ emitterProperty ]: emitter;
+      _findEmitterNode: function(node) {
+        var emitter = this.queryEffectiveChildrenDeep("#" + this.targetId, true, 'hot-network');
+        var emitterProperty = (this.targetProperty || 'request');
+        return emitter[emitterProperty] ? emitter[emitterProperty] : emitter;
       },
 
+      attached: function() {
 
-      attached: function(){
+        this.async(function() {
 
-        this.async( function() {
-
-          if( this.targetId ){
+          if (this.targetId) {
             this.emitter = this._findEmitterNode();
           } else {
             this.emitter = this._findFirstChildElement();
           }
 
-          if( this.emitter ){
-            this.listen( this.emitter, "error", "_catcher" );
-            this.listen( this.emitter, "response", "_catcher" );
-            this.listen( this.emitter, "request", "_catcher" );
+          if (this.emitter) {
+            this.listen(this.emitter, "error", "_catcher");
+            this.listen(this.emitter, "response", "_catcher");
+            this.listen(this.emitter, "request", "_catcher");
           }
         });
       },
 
-      detached: function(){
-        if( this.emitter ){
-          this.unlisten( this.emitter, "error", "_catcher" );
-          this.unlisten( this.emitter, "response", "_catcher" );
-          this.unlisten( this.emitter, "request", "_catcher" );
+      detached: function() {
+        if (this.emitter) {
+          this.unlisten(this.emitter, "error", "_catcher");
+          this.unlisten(this.emitter, "response", "_catcher");
+          this.unlisten(this.emitter, "request", "_catcher");
         }
       },
 
-      _catcher: function( e ){
+      _catcher: function(e) {
 
         // Errors will be ignored, meaning that "error" will be the same as
         // "loaded".
-        if( this.manageErrors ){
+        if (this.manageErrors) {
 
-          this.status = ( {
+          this.status = ({
             error: 'error',
             request: 'loading',
             response: 'loaded',
-          }[ e.type ] ) || "error";
+          }[e.type]) || "error";
 
           // if there is an error, fire a global error message
-          if( this.status === "error" && this.userMessageError ){
-            this.fire( 'user-message-error', { message: this.userMessageError } );
+          if (this.status === "error" && this.userMessageError) {
+            this.fire('user-message-error', {
+              message: this.userMessageError
+            });
           }
 
         } else {
-          this.status = ( {
+          this.status = ({
             error: 'loaded',
             request: 'loading',
             response: 'loaded',
-          }[ e.type ] ) || "loaded";
+          }[e.type]) || "loaded";
 
         }
       }
