@@ -254,7 +254,7 @@ It's possible to specify the target ID directly and have the target further in t
         var firstElement = this.getEffectiveChildren()[0];
         var emitterProperty = this.targetProperty || 'request';
         if (firstElement) {
-          if (emitterProperty) {
+          if (firstElement[ emitterProperty ]) {
             return firstElement[emitterProperty]
           } else {
             return firstElement.request ? firstElement.request : firstElement;
