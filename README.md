@@ -78,6 +78,10 @@ Voila': you have a form that pre-loads and submits data, and that is 100% networ
 
 Note that with just a small bunch of decorating widgets, you have here a fully functional, network-aware form.
 
+# Immediate
+
+With the `immediate` option, the child element is listened to straight away, before it's even ready. This has the potential to create problems with widgets that have a `request` element available only after being `ready()`ed. However, it has the benefit of not missing out on very early events (for example if the managed widget has an `iron-ajax` call set to `auto`).
+
 # Targeting the right `<iron-ajax>`
 
 `<hot-network>` should always directly wrap the element that makes the requests, which must be `<hot-network>`'s first child (also called the _target element_).

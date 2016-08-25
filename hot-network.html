@@ -162,6 +162,7 @@ It's possible to specify the target ID directly and have the target further in t
         background-color: none;
         opacity: 0.2;
         z-index: 0;
+      	display: none;
         @apply(--hot-network-overlay-loaded);
       }
 
@@ -225,6 +226,9 @@ It's possible to specify the target ID directly and have the target further in t
 
         emitter: Object,
 
+        immediate: Boolean,
+
+
         status: {
           type: String,
           notify: true,
@@ -270,20 +274,32 @@ It's possible to specify the target ID directly and have the target further in t
 
       attached: function() {
 
-        this.async(function() {
+        var t = this;
 
-          if (this.targetId) {
-            this.emitter = this._findEmitterNode();
+        // Function that actually does the finding and attaching
+        function findTargetAndListen(){
+
+          if (t.targetId) {
+            t.emitter = t._findEmitterNode();
           } else {
-            this.emitter = this._findFirstChildElement();
+            t.emitter = t._findFirstChildElement();
           }
 
-          if (this.emitter) {
-            this.listen(this.emitter, "error", "_catcher");
-            this.listen(this.emitter, "response", "_catcher");
-            this.listen(this.emitter, "request", "_catcher");
+          if (t.emitter) {
+            t.listen(t.emitter, "error", "_catcher");
+            t.listen(t.emitter, "response", "_catcher");
+            t.listen(t.emitter, "request", "_catcher");
           }
-        });
+        }
+
+        if( this.immediate ){
+          findTargetAndListen();
+        } else {
+          this.async(function() {
+            findTargetAndListen();
+          });
+        }
+
       },
 
       detached: function() {
@@ -309,7 +325,8 @@ It's possible to specify the target ID directly and have the target further in t
           // if there is an error, fire a global error message
           if (this.status === "error" && this.userMessageError) {
             this.fire('user-message-error', {
-              message: this.userMessageError
+              message: this.userMessageError,
+              originalEvent: e
             });
           }
 
