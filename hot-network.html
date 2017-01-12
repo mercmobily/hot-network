@@ -1,3 +1,4 @@
+
 <link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="../hot-deep-target-behavior/hot-deep-target-behavior.html">
 
@@ -127,116 +128,102 @@ It's possible to specify the target ID directly and have the target further in t
         position: relative;
       }
 
-      ;
-      /** Standard overlay CSS.
-       * The only "strange" part is the z-index, which needs to be high
-       * so that the overlay catches everything
-     */
-
       #overlay {
-        display: block;
+        display: none; /* Hide by default */
         position: absolute;
         top: 0;
         left: 0;
         right: 0;
         bottom: 0;
-        padding: 10px;
-        z-index: 9999;
-        -webkit-transition: background 0.5s linear;
-        -moz-transition: background 0.5s linear;
-        -ms-transition: background 0.5s linear;
-        -o-transition: background 0.5s linear;
-        transition: background 0.5s linear;
-        border-radius: 25px;
+        z-index: 1;
+        text-align: center;
+        padding: 16px; /* Space around text */
+        transition: background var(--hot-network-transition-duration, 200ms);
         @apply(--hot-network-overlay);
       }
-
-      ;
       #overlay.loading {
-        opacity: 0.2;
-        background-color: grey;
+        display: block;
+        color: var(--hot-network-overlay-loading-color, #666);
+        background-color: var(--hot-network-overlay-loading-background-color, transparent);
         @apply(--hot-network-overlay-loading);
       }
-
       #overlay.loaded {
-        background-color: none;
-        opacity: 0.2;
-        z-index: 0;
-        display: none;
         @apply(--hot-network-overlay-loaded);
       }
-
       #overlay.error {
-        opacity: 0.2;
-        background-color: red;
+        display: block;
+        cursor: pointer; /* Hint that the object is clickable */
+        color: var(--hot-network-overlay-error-color, #c00);
+        background-color: var(--hot-network-overlay-error-background-color, rgba(255, 0, 0, 0.25));
         @apply(--hot-network-overlay-error);
       }
 
       #content-wrapper {
-        @apply(--hot-network-content-wrapper);
+        @apply(--hot-network-content);
       }
-
-      ;
-      #content-wrapper.loading {
-        opacity: 0.3;
-        @apply(--hot-network-content-wrapper-loading);
-      }
-
-      #content-wrapper.loaded {
-        @apply(--hot-network-content-wrapper-loaded);
-      }
-
+      #content-wrapper.loading,
       #content-wrapper.error {
-        opacity: 0.3;
-        @apply(--hot-network-content-wrapper-error);
+        pointer-events: none;
+        padding: 16px; /* Space around text */
+        opacity: 0.25;
+        min-height: 1.25rem; /* FIXME: find a proper value, this is made up */
+      }
+      #content-wrapper.loading {
+        @apply(--hot-network-content-loading);
+      }
+      #content-wrapper.loaded {
+        @apply(--hot-network-content-loaded);
+      }
+      #content-wrapper.error {
+        @apply(--hot-network-content-error);
       }
     </style>
 
-    <div>
-      <div id="overlay" on-tap="_overlayTapped" class$="{{status}}"></div>
-      <div id="content-wrapper" class$="{{status}}">
-        <content></content>
-      </div>
+    <div id="overlay" on-tap="_overlayTapped" class$="{{status}}">
+      {{_statusMessage(status)}}
     </div>
-
+    <div id="content-wrapper" class$="{{status}}">
+      <content></content>
+    </div>
   </template>
 
   <script>
     Polymer({
-
       is: 'hot-network',
 
       properties: {
-
         manageErrors: {
           type: Boolean,
           value: false
         },
-
         noReloadOnTap: {
           type: Boolean,
           value: false
         },
-
         userMessageError: {
           type: String,
           value: "Error!"
         },
-
         emitter: Object,
-
         immediate: Boolean,
-
-
         status: {
           type: String,
           notify: true,
           value: "loaded",
-          observer: "_statusChanged",
+          observer: "_statusChanged"
         },
-
         targetId: String,
         targetProperty: String,
+        statusMessages: {
+          type: Object,
+          value: function(){
+            return {
+              'loading': 'Loading\u2026', // &hellip; equivalent
+              'loaded': '',
+              'error': 'An error has occurred. Click here to try again.'
+            };
+          }
+        }
       },
 
       _overlayTapped: function(e) {
@@ -253,12 +240,17 @@ It's possible to specify the target ID directly and have the target further in t
         this.updateStyles();
       },
 
+      _statusMessage: function(status) {
+        if (!this.statusMessages) return ''; /* Was undefined on startup */
+        return this.statusMessages[status];
+      },
+
       _findFirstChildElement: function() {
         var firstElement = this.getEffectiveChildren()[0];
         var emitterProperty = this.targetProperty || 'request';
         if (firstElement) {
           if (firstElement[ emitterProperty ]) {
-            return firstElement[emitterProperty]
+            return firstElement[emitterProperty];
           } else {
             return firstElement.request ? firstElement.request : firstElement;
           }
@@ -272,12 +264,10 @@ It's possible to specify the target ID directly and have the target further in t
       },
 
       attached: function() {
-
         var t = this;
 
         // Function that actually does the finding and attaching
         function findTargetAndListen(){
-
           if (t.targetId) {
             t.emitter = t._findEmitterNode();
           } else {
@@ -291,14 +281,13 @@ It's possible to specify the target ID directly and have the target further in t
           }
         }
 
-        if( this.immediate ){
+        if (this.immediate) {
           findTargetAndListen();
         } else {
           this.async(function() {
             findTargetAndListen();
           });
         }
-
       },
 
       detached: function() {
@@ -310,11 +299,9 @@ It's possible to specify the target ID directly and have the target further in t
       },
 
       _catcher: function(e) {
-
         // Errors will be ignored, meaning that "error" will be the same as
         // "loaded".
         if (this.manageErrors) {
-
           this.status = ({
             error: 'error',
             request: 'loading',
@@ -328,14 +315,12 @@ It's possible to specify the target ID directly and have the target further in t
               originalEvent: e
             });
           }
-
         } else {
           this.status = ({
             error: 'loaded',
             request: 'loading',
             response: 'loaded',
           }[e.type]) || "loaded";
-
         }
       }
     });
