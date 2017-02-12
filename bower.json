@@ -1,6 +1,12 @@
 {
   "name": "hot-network",
   "description": "Decorator widegt that makes AJAX-using elements network resilient and responsive",
+  "keywords": [
+    "web-components",
+    "resilience",
+    "network",
+    "forms"
+  ],
   "main": "hot-network.html",
   "dependencies": {
     "polymer": "Polymer/polymer#^1.6.0",
