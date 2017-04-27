@@ -1,4 +1,3 @@
-
 <link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="../hot-deep-target-behavior/hot-deep-target-behavior.html">
 
@@ -149,7 +148,7 @@ It's possible to specify the target ID directly and have the target further in t
       #overlay.loading {
         display: block;
         color: var(--hot-network-overlay-loading-color, #666);
-        //background-color: var(--hot-network-overlay-loading-background-color, #d9dce0);
+        /*background-color: var(--hot-network-overlay-loading-background-color, #d9dce0);*/
         background-color: var(--hot-network-overlay-loading-background-color, transparent);
         @apply(--hot-network-overlay-loading);
       }
@@ -185,7 +184,7 @@ It's possible to specify the target ID directly and have the target further in t
     </style>
 
     <div id="overlay" on-tap="_overlayTapped" class$="{{status}}">
-      {{_statusMessage(status)}}
+      {{_statusMessage(status,showLoading)}}
     </div>
     <div id="content-wrapper" class$="{{status}}">
       <content></content>
@@ -197,6 +196,10 @@ It's possible to specify the target ID directly and have the target further in t
       is: 'hot-network',
 
       properties: {
+        showLoading: {
+          type: Boolean,
+          value: false
+        },
         manageErrors: {
           type: Boolean,
           value: false
@@ -223,7 +226,7 @@ It's possible to specify the target ID directly and have the target further in t
           type: Object,
           value: function(){
             return {
-              'loading': '', // &hellip; equivalent
+              'loading': 'Loading\u2026', // &hellip; equivalent
               'loaded': '',
               'error': 'An error has occurred. Click here to try again.'
             };
@@ -245,8 +248,10 @@ It's possible to specify the target ID directly and have the target further in t
         this.updateStyles();
       },
 
-      _statusMessage: function(status) {
+      _statusMessage: function(status, showLoading) {
         if (!this.statusMessages) return ''; /* Was undefined on startup */
+        if (status == 'loading' && !showLoading) return '';
+
         return this.statusMessages[status];
       },
 
