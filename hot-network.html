@@ -1,15 +1,12 @@
 <link rel="import" href="../polymer/polymer.html">
-<link rel="import" href="../hot-deep-target-behavior/hot-deep-target-behavior.html">
 
 <!--
 [![Published on webcomponents.org](https://img.shields.io/badge/webcomponents.org-published-blue.svg)](https://www.webcomponents.org/element/mercmobily/hot-form)
 
-Too many applications today have AJAX calls that are made without proper error checking. This leads to applications with strangely empty select widgets, and requiring a hard reloads in orderto (hopefully) display properly. Network resiliance code is boilerplate, and it's often repeated for each call.
+Too many applications today have AJAX calls that are made without proper error checking. This leads to applications with strangely empty select widgets, and requiring a hard reloads in order to (hopefully) display properly. Network resiliance code is boilerplate, and it's often repeated for each call.
 
-`hot-network` is used to wrap another element that makes AJAX calls, in order to make it
-
-* Unclickable/gray while the AJAX call is going on
-* (Optionally) manage errors in case so that it will:
+`hot-network` is used to wrap another element that makes AJAX calls, in order to make it Unclickable/gray while the AJAX call is going on
+It will also (optionally) manage errors so that it will:
   * Give a differently themed overlay if the call didn't work
   * Give the option to retry a failed AJAX call by clicking on the overlay
   * Communicate to the user in case of problems
@@ -55,7 +52,7 @@ Note that `manage-errors` doesn't make sense in a form contest because 1) A form
 
 The `<hot-form>` element is a mixed bag: it has itself a `request` property which is the one used to _initally load_ data from the server. So, it should check for errors at load time (and reload the data if the loading call fails). However, `<hot-form>` _also_ always contains a `<form>` element that itself has a `request` property, used to submit data to the server.
 
-In this case, you a recommended to use two `<hot-network>` elements:
+In this case, you should to use two `<hot-network>` elements:
 
 * one to gray the form while loading initial data _and_ give users a chance to re-run the request in case of errors
 * one to gray out the form while the data is being submitted (errors won't be managed since it wouldn't make sense here).
@@ -109,14 +106,6 @@ So:
     </hot-network>
 
 So, the `request` property always has priority.
-
-It's possible to specify the target ID directly and have the target further in the DOM, rather than being `<hot-network>`'s first child:
-
-    <hot-network target-id="displayer">
-      <div>
-        <data-displayer id="displayer"></data-displayer>
-      </div>
-    </hot-network>
 
 @demo demo/index.html
 -->
@@ -187,152 +176,167 @@ It's possible to specify the target ID directly and have the target further in t
       {{_statusMessage(status,showLoading)}}
     </div>
     <div id="content-wrapper" class$="{{status}}">
-      <content></content>
+      <slot></slot>
     </div>
   </template>
 
   <script>
-    Polymer({
-      is: 'hot-network',
+/* global Polymer,customElements,Node */
+class HotNetwork extends Polymer.Element {
+  static get is () { return 'hot-network' }
 
-      properties: {
-        showLoading: {
-          type: Boolean,
-          value: false
-        },
-        manageErrors: {
-          type: Boolean,
-          value: false
-        },
-        noReloadOnTap: {
-          type: Boolean,
-          value: false
-        },
-        userMessageError: {
-          type: String,
-          value: "Error!"
-        },
-        emitter: Object,
-        immediate: Boolean,
-        status: {
-          type: String,
-          notify: true,
-          value: "loaded",
-          observer: "_statusChanged"
-        },
-        targetId: String,
-        targetProperty: String,
-        statusMessages: {
-          type: Object,
-          value: function(){
-            return {
-              'loading': 'Loading\u2026', // &hellip; equivalent
-              'loaded': '',
-              'error': 'An error has occurred. Click here to try again.'
-            };
+  static get properties () {
+    return {
+      showLoading: {
+        type: Boolean,
+        value: false
+      },
+      manageErrors: {
+        type: Boolean,
+        value: false
+      },
+      noReloadOnTap: {
+        type: Boolean,
+        value: false
+      },
+      userMessageError: {
+        type: String,
+        value: 'Error!'
+      },
+      emitter: Object,
+      immediate: Boolean,
+      status: {
+        type: String,
+        notify: true,
+        value: 'loaded',
+        observer: '_statusChanged'
+      },
+      targetProperty: String,
+      statusMessages: {
+        type: Object,
+        value: function () {
+          return {
+            'loading': 'Loading\u2026', // &hellip; equivalent
+            'loaded': '',
+            'error': 'An error has occurred. Click here to try again.'
           }
-        }
-      },
-
-      _overlayTapped: function(e) {
-        if (!this.noReloadOnTap) {
-          e.stopPropagation();
-          e.preventDefault();
-          if (this.status == 'error') {
-            this.emitter.generateRequest();
-          }
-        }
-      },
-
-      _statusChanged: function(s) {
-        this.updateStyles();
-      },
-
-      _statusMessage: function(status, showLoading) {
-        if (!this.statusMessages) return ''; /* Was undefined on startup */
-        if (status == 'loading' && !showLoading) return '';
-
-        return this.statusMessages[status];
-      },
-
-      _findFirstChildElement: function() {
-        var firstElement = this.getEffectiveChildren()[0];
-        var emitterProperty = this.targetProperty || 'request';
-        if (firstElement) {
-          if (firstElement[ emitterProperty ]) {
-            return firstElement[emitterProperty];
-          } else {
-            return firstElement.request ? firstElement.request : firstElement;
-          }
-        }
-      },
-
-      _findEmitterNode: function(node) {
-        var emitter = this.queryEffectiveChildrenDeep("#" + this.targetId, true, 'hot-network');
-        var emitterProperty = (this.targetProperty || 'request');
-        return emitter[emitterProperty] ? emitter[emitterProperty] : emitter;
-      },
-
-      attached: function() {
-        var t = this;
-
-        // Function that actually does the finding and attaching
-        function findTargetAndListen(){
-          if (t.targetId) {
-            t.emitter = t._findEmitterNode();
-          } else {
-            t.emitter = t._findFirstChildElement();
-          }
-
-          if (t.emitter) {
-            t.listen(t.emitter, "error", "_catcher");
-            t.listen(t.emitter, "response", "_catcher");
-            t.listen(t.emitter, "request", "_catcher");
-          }
-        }
-
-        if (this.immediate) {
-          findTargetAndListen();
-        } else {
-          this.async(function() {
-            findTargetAndListen();
-          });
-        }
-      },
-
-      detached: function() {
-        if (this.emitter) {
-          this.unlisten(this.emitter, "error", "_catcher");
-          this.unlisten(this.emitter, "response", "_catcher");
-          this.unlisten(this.emitter, "request", "_catcher");
-        }
-      },
-
-      _catcher: function(e) {
-        // Errors will be ignored, meaning that "error" will be the same as
-        // "loaded".
-        if (this.manageErrors) {
-          this.status = ({
-            error: 'error',
-            request: 'loading',
-            response: 'loaded',
-          }[e.type]) || "error";
-
-          // if there is an error, fire a global error message
-          if (this.status === "error" && this.userMessageError) {
-            this.fire('user-message-error', {
-              message: this.userMessageError,
-              originalEvent: e
-            });
-          }
-        } else {
-          this.status = ({
-            error: 'loaded',
-            request: 'loading',
-            response: 'loaded',
-          }[e.type]) || "loaded";
         }
       }
-    });
+    }
+  }
+
+  _overlayTapped (e) {
+    if (!this.noReloadOnTap) {
+      e.stopPropagation()
+      e.preventDefault()
+      if (this.status === 'error') {
+        this.emitter.generateRequest()
+      }
+    }
+  }
+
+  _statusChanged (s) {
+    this.updateStyles()
+  }
+
+  _statusMessage (status, showLoading) {
+    if (!this.statusMessages) return '' /* Was undefined on startup */
+    if (status === 'loading' && !showLoading) return ''
+
+    return this.statusMessages[status]
+  }
+
+  _findFirstChildElement () {
+    debugger
+    var firstElement = Polymer.FlattenedNodesObserver.getFlattenedNodes(this).find(el => el.nodeType === Node.ELEMENT_NODE)
+    var emitterProperty = this.targetProperty || 'request'
+    if (firstElement) {
+      if (firstElement[ emitterProperty ]) {
+        return firstElement[emitterProperty]
+      } else {
+        return firstElement.request ? firstElement.request : firstElement
+      }
+    } else {
+      throw new Error('hot-network could not find the element to be decorated')
+    }
+  }
+
+  connectedCallback () {
+    super.connectedCallback()
+    var t = this
+
+    // Function that actually does the finding and attaching
+    function findTargetAndListen () {
+      t.emitter = t._findFirstChildElement()
+      if (t.emitter) {
+        // This is ridiculous. https://github.com/PolymerElements/iron-form/issues/258
+        t.emitter.addEventListener('iron-ajax-error', t._catcher.bind(t))
+        t.emitter.addEventListener('iron-ajax-response', t._catcher.bind(t))
+        t.emitter.addEventListener('iron-ajax-request', t._catcher.bind(t))
+        t.emitter.addEventListener('iron-form-error', t._catcher.bind(t))
+        t.emitter.addEventListener('iron-form-response', t._catcher.bind(t))
+        t.emitter.addEventListener('iron-form-request', t._catcher.bind(t))
+        t.emitter.addEventListener('error', t._catcher.bind(t))
+        t.emitter.addEventListener('response', t._catcher.bind(t))
+        t.emitter.addEventListener('request', t._catcher.bind(t))
+      }
+    }
+
+    if (this.immediate) {
+      findTargetAndListen()
+    } else {
+      setTimeout(function () {
+        findTargetAndListen()
+      }, 0)
+    }
+  }
+
+  detachedCallback () {
+    super.detachedCallback()
+    if (this.emitter) {
+      this.emitter.removeEventListener('iron-ajax-error', this._catcher.bind(this))
+      this.emitter.removeEventListener('iron-ajax-response', this._catcher.bind(this))
+      this.emitter.removeEventListener('iron-ajax-request', this._catcher.bind(this))
+      this.emitter.removeEventListener('iron-form-error', this._catcher.bind(this))
+      this.emitter.removeEventListener('iron-form-response', this._catcher.bind(this))
+      this.emitter.removeEventListener('iron-form-request', this._catcher.bind(this))
+      this.emitter.removeEventListener('error', this._catcher.bind(this))
+      this.emitter.removeEventListener('response', this._catcher.bind(this))
+      this.emitter.removeEventListener('request', this._catcher.bind(this))
+    }
+  }
+
+  _catcher (e) {
+    // Errors will be ignored, meaning that "error" will be the same as
+    // "loaded".
+
+    // Normalise the name, so that only the last work is used.
+    // E.g. 'iron-ajax-error' -> 'error'
+    var type = e.type.split(/[^a-zA-Z]/).pop()
+
+    if (this.manageErrors) {
+      this.status = ({
+        error: 'error',
+        request: 'loading',
+        response: 'loaded'
+      }[type]) || 'error'
+
+      // if there is an error, fire a global error message
+      if (this.status === 'error' && this.userMessageError) {
+        this.fire('user-message-error', {
+          message: this.userMessageError,
+          originalEvent: e
+        })
+      }
+    } else {
+      this.status = ({
+        error: 'loaded',
+        request: 'loading',
+        response: 'loaded'
+      }[type]) || 'loaded'
+    }
+  }
+}
+customElements.define(HotNetwork.is, HotNetwork)
   </script>
 </dom-module>

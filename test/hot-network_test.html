@@ -1,32 +1,52 @@
 <!doctype html>
-
-<html>
+<html lang="en">
   <head>
-    <title>hot-network test</title>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
-    <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+    <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes">
+
+    <title>hot-network test</title>
+
+    <script src="../../webcomponentsjs/webcomponents-loader.js"></script>
     <script src="../../web-component-tester/browser.js"></script>
 
     <link rel="import" href="../hot-network.html">
   </head>
   <body>
 
-    <test-fixture id="basic">
+    <test-fixture id="BasicTestFixture">
       <template>
         <hot-network></hot-network>
       </template>
     </test-fixture>
 
-    <script>
-      suite('hot-network', function() {
+    <test-fixture id="ChangedPropertyTestFixture">
+      <template>
+        <hot-network prop1="new-prop1"></hot-network>
+      </template>
+    </test-fixture>
 
-        test('instantiating the element works', function() {
-          var element = fixture('basic');
-          assert.equal(element.is, 'hot-network');
+    <script>
+      suite('hot-network', () => {
+
+        test('instantiating the element with default properties works', () => {
+          const element = fixture('BasicTestFixture');
+          assert.equal(element.prop1, 'hot-network');
+          const elementShadowRoot = element.shadowRoot;
+          const elementHeader = elementShadowRoot.querySelector('h2');
+          assert.equal(elementHeader.innerHTML, 'Hello hot-network!');
+        });
+
+        test('setting a property on the element works', () => {
+          // Create a test fixture
+          const element = fixture('ChangedPropertyTestFixture');
+          assert.equal(element.prop1, 'new-prop1');
+          const elementShadowRoot = element.shadowRoot;
+          const elementHeader = elementShadowRoot.querySelector('h2');
+          assert.equal(elementHeader.innerHTML, 'Hello new-prop1!');
         });
 
       });
     </script>
+
   </body>
 </html>
