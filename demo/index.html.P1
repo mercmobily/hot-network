@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+  <head>
+    <title>hot-network demo</title>
+
+    <script>
+
+      document.addEventListener( 'user-message-error', function( e ){
+        alert("Event user-message-error intercepted. Message: " + e.detail.message );
+      })
+
+      // window.Polymer = { lazyRegister: true, dom: 'shadow', useNativeCSSProperties: true };
+    </script>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
+    <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+
+    <link rel="import" href="../../iron-demo-helpers/demo-pages-shared-styles.html">
+    <link rel="import" href="../../iron-demo-helpers/demo-snippet.html">
+    <link rel="import" href="dummy-loader.html">
+
+
+    <link rel="import" href="../hot-network.html">
+
+    <style is="custom-style" include="demo-pages-shared-styles">
+    </style>
+  </head>
+  <body>
+
+
+    <div class="vertical-section-container centered">
+      <h3>Basic widget, using the <code>request</code> property of dummy-loader</h3>
+      <demo-snippet>
+        <template>
+          <hot-network>
+            <dummy-loader></dummy-loader>
+          </hot-network>
+
+        </template>
+      </demo-snippet>
+    </div>
+
+    <div class="vertical-section-container centered">
+      <h3>Use with <code>manage-errors</code></h3>
+      <p>Clicking on the request,error button, hot-network will show a clickable
+         overlay. When clicked, the request will be re-attempted.</p>
+      <demo-snippet>
+        <template>
+          <hot-network manage-errors>
+            <dummy-loader></dummy-loader>
+          </hot-network>
+
+        </template>
+      </demo-snippet>
+    </div>
+
+    <div class="vertical-section-container centered">
+      <h3>Use of the widget using a different target property.</h3>
+      <demo-snippet>
+        <template>
+          <hot-network target-property="alternativeRequest">
+            <dummy-loader></dummy-loader>
+          </hot-network>
+
+        </template>
+      </demo-snippet>
+    </div>
+
+  </body>
+</html>
