@@ -1,5 +1,6 @@
 <link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="../iron-form/iron-form.html">
+<link rel="import" href="../iron-ajax/iron-ajax.html">
 
 <!--
 [![Published on webcomponents.org](https://img.shields.io/badge/webcomponents.org-published-blue.svg)](https://www.webcomponents.org/element/mercmobily/hot-form)
@@ -182,21 +183,7 @@ So, the `request` property always has priority.
   </template>
 
   <script>
-// Monkey-patching iron-form to have this.request available
-// https://github.com/PolymerElements/iron-form/issues/258
-var ironForm = document.createElement('iron-form')
-var proto = Object.getPrototypeOf(ironForm)
-var orig = proto.attached
-proto.attached = function () {
-  if (!this.request) {
-    this.request = document.createElement('iron-ajax')
-    this.request.addEventListener('response', this._handleFormResponse.bind(this))
-    this.request.addEventListener('error', this._handleFormError.bind(this))
-  }
-  orig.call(this)
-}
-
-/* global Polymer,customElements,Node */
+/* global Polymer,customElements,CustomEvent,Node */
 class HotNetwork extends Polymer.Element {
   static get is () { return 'hot-network' }
 
@@ -219,7 +206,10 @@ class HotNetwork extends Polymer.Element {
         value: 'Error!'
       },
       emitter: Object,
-      immediate: Boolean,
+      eventsPrefix: {
+        type: String,
+        value: ''
+      },
       status: {
         type: String,
         notify: true,
@@ -261,49 +251,33 @@ class HotNetwork extends Polymer.Element {
     return this.statusMessages[status]
   }
 
-  _findFirstChildElement () {
-    var firstElement = Polymer.FlattenedNodesObserver.getFlattenedNodes(this).find(el => el.nodeType === Node.ELEMENT_NODE)
-    var emitterProperty = this.targetProperty || 'request'
-    if (firstElement) {
-      if (firstElement[ emitterProperty ]) {
-        return firstElement[emitterProperty]
-      } else {
-        return firstElement.request ? firstElement.request : firstElement
-      }
-    } else {
-      throw new Error('hot-network could not find the element to be decorated')
-    }
+  constructor () {
+    super()
+    this._catcherBound = this._catcher.bind(this)
   }
 
   connectedCallback () {
     super.connectedCallback()
-    var t = this
 
-    // Function that actually does the finding and attaching
-    function findTargetAndListen () {
-      t.emitter = t._findFirstChildElement()
-      if (t.emitter) {
-        t.emitter.addEventListener('error', t._catcher.bind(t))
-        t.emitter.addEventListener('response', t._catcher.bind(t))
-        t.emitter.addEventListener('request', t._catcher.bind(t))
-      }
-    }
+    // The emitter is the first child
+    this.emitter = Polymer.FlattenedNodesObserver.getFlattenedNodes(this).find(el => el.nodeType === Node.ELEMENT_NODE)
 
-    if (this.immediate) {
-      findTargetAndListen()
-    } else {
-      setTimeout(function () {
-        findTargetAndListen()
-      }, 0)
-    }
+    // Default prefixes for well-known emitters
+    if (this.emitter.tagName === 'IRON-FORM' && this.eventsPrefix === '') this.eventsPrefix = 'iron-form-'
+
+    this.emitter.addEventListener(`${this.eventsPrefix}submit`, this._catcherBound)
+    this.emitter.addEventListener(`${this.eventsPrefix}request`, this._catcherBound)
+    this.emitter.addEventListener(`${this.eventsPrefix}response`, this._catcherBound)
+    this.emitter.addEventListener(`${this.eventsPrefix}error`, this._catcherBound)
   }
 
   detachedCallback () {
     super.detachedCallback()
     if (this.emitter) {
-      this.emitter.removeEventListener('error', this._catcher.bind(this))
-      this.emitter.removeEventListener('response', this._catcher.bind(this))
-      this.emitter.removeEventListener('request', this._catcher.bind(this))
+      this.emitter.removeEventListener(`${this.eventsPrefix}submit`, this._catcherBound)
+      this.emitter.removeEventListener(`${this.eventsPrefix}request`, this._catcherBound)
+      this.emitter.removeEventListener(`${this.eventsPrefix}response`, this._catcherBound)
+      this.emitter.removeEventListener(`${this.eventsPrefix}error`, this._catcherBound)
     }
   }
 
@@ -319,20 +293,19 @@ class HotNetwork extends Polymer.Element {
       this.status = ({
         error: 'error',
         request: 'loading',
+        submit: 'loading',
         response: 'loaded'
       }[type]) || 'error'
 
       // if there is an error, fire a global error message
       if (this.status === 'error' && this.userMessageError) {
-        this.fire('user-message-error', {
-          message: this.userMessageError,
-          originalEvent: e
-        })
+        this.dispatchEvent(new CustomEvent('user-message-error', { detail: { message: this.userMessageError, originalEvent: e }, bubbles: false, composed: true }))
       }
     } else {
       this.status = ({
         error: 'loaded',
         request: 'loading',
+        submit: 'loading',
         response: 'loaded'
       }[type]) || 'loaded'
     }
