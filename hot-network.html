@@ -197,6 +197,10 @@ class HotNetwork extends Polymer.Element {
         type: Boolean,
         value: false
       },
+      reloadMethod: {
+        type: String,
+        value: ''
+      },
       noReloadOnTap: {
         type: Boolean,
         value: false
@@ -235,7 +239,9 @@ class HotNetwork extends Polymer.Element {
       e.stopPropagation()
       e.preventDefault()
       if (this.status === 'error') {
-        this.emitter.generateRequest()
+        if (this.reloadMethod) {
+          this.emitter[this.reloadMethod]()
+        }
       }
     }
   }
