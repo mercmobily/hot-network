@@ -235,12 +235,20 @@ class HotNetwork extends Polymer.Element {
   }
 
   _overlayTapped (e) {
+    debugger
+    var reloadMethod
     if (!this.noReloadOnTap) {
       e.stopPropagation()
       e.preventDefault()
       if (this.status === 'error') {
-        if (this.reloadMethod) {
-          this.emitter[this.reloadMethod]()
+        //
+        // Try to figure out the reload method, defaulting to `reload` if emitter has it
+        if (this.reloadMethod) reloadMethod = this.reloadMethod
+        else if (typeof this.emitter.reload === 'function') reloadMethod = 'reload'
+        else if (typeof this.emitter.generateRequest === 'function') reloadMethod = 'generateRequest'
+
+        if (reloadMethod) {
+          this.emitter[reloadMethod]()
         }
       }
     }
