@@ -15,6 +15,17 @@ It will also (optionally) manage errors so that it will:
 
 The overlay is fully themable with CSS mixins.
 
+# How decorated elements are dealt with
+
+In order to function, hot-network must know the status of the decorated element in order to change its status. This is the rundown of the requirements:
+
+* The decorated element is always the first child of `hot-network`
+* `hot-network` will listen to the events `submit`, `request`, `response`, `error` from the decorated element
+* You can set `event-prefix` if the element emits the events listed above with a prefix beforehand
+* IRON-FORM is a special case: the prefix `iron-form-` is added automatically
+* In order to reload in case of loading error, the decorated element's `reload()` or `generateRequest()` is called.
+* You can set `reload-method` to something else if your decorated element exposes a different method to reload
+
 # Basic use: make contained element unclickable while AJAX is going on
 
 All you have to do in order to get a contained element unclickable while the AJAX call is going, is wrap it with `<hot-network>`. Make sure the widget making the AJAX call is the first child of `<hot-network>`:
@@ -38,7 +49,7 @@ You can use `<hot-network>` for widgets that are build to display data after mak
 
 In this case, `<hot-network>` will be in one of three states: "loading", "loaded", "error".
 
-When in "error" state, `<data-displayer>` will still be overlayed and unreachable. However, when tapping on the overlay, the AJAX call will be attempted again (it will re-run the `generateRequest()` method of the `<iron-ajax>` element).
+When in "error" state, `<data-displayer>` will still be overlayed and unreachable. However, when tapping on the overlay, the AJAX call will be attempted again when overlay is tapped.
 
 If `manage-error` is on, in case of error `<hot-network>` will fire a `user-message-error` event with the message in the detail, like this: `{ message: "Error!" }`. The error message can be customised by setting the `user-message-error` attribute:
 
@@ -48,16 +59,14 @@ If `manage-error` is on, in case of error `<hot-network>` will fire a `user-mess
 
 A UI widget should pick up this message event and display it to the user.
 
-Note that `manage-errors` doesn't make sense in a form contest because 1) A form that has an error will likely emit its own user message event 2) A form that fails doesn't need to be overlayed to retry: the user will be able to click on the "Submit" button again.
+Note that `manage-errors` doesn't make sense in a form context because 1) A form that has an error will likely emit its own user message event 2) A form that fails doesn't need to be overlayed to retry: the user will be able to click on the "Submit" button again.
 
 # Usage with `<hot-form>`
 
-The `<hot-form>` element is a mixed bag: it has itself a `request` property which is the one used to _initally load_ data from the server. So, it should check for errors at load time (and reload the data if the loading call fails). However, `<hot-form>` _also_ always contains a `<form>` element that itself has a `request` property, used to submit data to the server.
+The `<hot-form>` element should be wrapped by `<hot-network>` if it's configured to load data. So, when using a form with `<hot-form>`, you should to use two `<hot-network>` elements:
 
-In this case, you should to use two `<hot-network>` elements:
-
-* one to gray the form while loading initial data _and_ give users a chance to re-run the request in case of errors
-* one to gray out the form while the data is being submitted (errors won't be managed since it wouldn't make sense here).
+* one decorating `hot-form`, in order to gray the form while loading initial data _and_ give users a chance to re-run the request in case of errors
+* one decorating `iron-form`, to gray out the form while the data is being submitted (errors won't be managed since it wouldn't make sense here).
 
 So:
 
@@ -81,33 +90,7 @@ Voila': you have a form that pre-loads and submits data, and that is 100% networ
 * If data-loading fails, users will be able to re-attempt it (and view an error message)
 * While submitting data to the server, the form will be gray
 
-Note that with just a small bunch of decorating widgets, you have here a fully functional, network-aware form.
-
-# Targeting the right `<iron-ajax>`
-
-`<hot-network>` should always directly wrap the element that makes the requests, which must be `<hot-network>`'s first child (also called the _target element_).
-If the target element has a property called `request`, that will be assumed to be an `<iron-ajax>` widget. If it doesn't, then it's assumed that the target element itself is an `<iron-ajax>` element. The name of the property to be checked can be changed with the `target-property` attribute.
-So:
-
-    <hot-network>
-      <!-The property 'request' of `<data-displayer>` is assumed to be an <iron-ajax ->
-      <!-If 'request' is not there, then `<data-displayer>` itself is assumed to be an <iron-ajax ->
-      <data-displayer></data-displayer>
-    </hot-network>
-
-    <hot-network target-property="iaw">
-      <!-The property 'iaw' of `<data-displayer>` is assumed to be an <iron-ajax ->
-      <!-If 'iaw' is not there, then `<data-displayer>` itself is assumed to be an <iron-ajax ->
-      <data-displayer></data-displayer>
-    </hot-network>
-
-    <hot-network>
-      <!-The <iron-ajax> element doesn't have a "request" attribute. ->
-      <- So, <iron-ajax> will be the target ->
-      <iron-ajax></iron-ajax>
-    </hot-network>
-
-So, the `request` property always has priority.
+Note that with just one small decorating elements, you end up with a network-aware form.
 
 @demo demo/index.html
 -->
