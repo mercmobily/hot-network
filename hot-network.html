@@ -229,7 +229,7 @@ class HotNetwork extends Polymer.Element {
         else if (typeof this.emitter.reload === 'function') reloadMethod = 'reload'
         else if (typeof this.emitter.generateRequest === 'function') reloadMethod = 'generateRequest'
 
-        if (reloadMethod) {
+        if (reloadMethod && typeof this.emitter[reloadMethod] === 'function') {
           this.emitter[reloadMethod]()
         }
       }
